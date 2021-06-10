@@ -217,6 +217,12 @@ class ArCoreView(val activity: Activity, context: Context, messenger: BinaryMess
                 debugLog(" Toggle planeRenderer visibility" )
                 arSceneView!!.planeRenderer.isVisible = !arSceneView!!.planeRenderer.isVisible
             }
+            "performHitTestAtScreenPosition" -> {
+                performHitTestAtScreenPosition(call, result)
+            }
+            "getCameraPose" -> {
+                getCameraPose(call, result)
+            }
             else -> {
             }
         }
@@ -243,7 +249,7 @@ class ArCoreView(val activity: Activity, context: Context, messenger: BinaryMess
 
     private fun setupLifeCycle(context: Context) {
         activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 debugLog("onActivityCreated")
 //                maybeEnableArButton()
             }
@@ -563,4 +569,34 @@ class ArCoreView(val activity: Activity, context: Context, messenger: BinaryMess
         node?.localPosition = parseVector3(call.arguments as HashMap<String, Any>)
         result.success(null)
     }*/
+    public fun performHitTestAtScreenPosition(call: MethodCall, result: MethodChannel.Result) {
+        val xyPositionsMap = call.arguments as HashMap<String, Float>
+        val xPosition = (xyPositionsMap.get("xPosition") as Double).toFloat()
+        val yPosition = (xyPositionsMap.get("yPosition") as Double).toFloat()
+        val frame = arSceneView?.arFrame
+        if (frame != null) {
+            val hitList = frame.hitTest(xPosition, yPosition)
+            if (hitList.isNullOrEmpty()) {
+                result.success(null)
+                return
+            }
+            val hit = hitList.first()
+            val list = ArrayList<HashMap<String, Any>>()
+            val distance: Float = hit.distance
+            val translation = hit.hitPose.translation
+            val rotation = hit.hitPose.rotationQuaternion
+            val flutterArCoreHitTestResultHashMap = FlutterArCoreHitTestResult(distance, translation, rotation).toHashMap()
+            result.success(flutterArCoreHitTestResultHashMap)
+        } else {
+            result.success(null)
+        }
+    }
+
+    public fun getCameraPose(cal: MethodCall, result: MethodChannel.Result) {
+        val cameraPose = arSceneView?.arFrame?.camera?.getDisplayOrientedPose()
+        val cameraPoseTranslation = cameraPose?.getTranslation() as FloatArray
+        val cameraPoseRotation = cameraPose?.getRotationQuaternion() as FloatArray
+        val cameraPoseMap = FlutterArCorePose(cameraPoseTranslation,cameraPoseRotation).toHashMap()
+        result.success(cameraPoseMap)
+    }
 }
