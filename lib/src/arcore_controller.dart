@@ -37,6 +37,7 @@ class ArCoreController {
       this.enableTapRecognizer,
       this.enablePlaneRenderer,
       this.enableUpdateListener,
+      this.forceTapOnScreenCenter,
       this.debug = false
 //    @required this.onUnsupported,
       }) {
@@ -48,6 +49,7 @@ class ArCoreController {
   final bool enableUpdateListener;
   final bool enableTapRecognizer;
   final bool enablePlaneRenderer;
+  final bool forceTapOnScreenCenter;
   final bool debug;
   MethodChannel _channel;
   StringResultHandler onError;
@@ -65,6 +67,7 @@ class ArCoreController {
         'enableTapRecognizer': enableTapRecognizer,
         'enablePlaneRenderer': enablePlaneRenderer,
         'enableUpdateListener': enableUpdateListener,
+        'forceTapOnScreenCenter': forceTapOnScreenCenter,
       });
     } on PlatformException catch (ex) {
       print(ex.message);
@@ -247,6 +250,14 @@ class ArCoreController {
 
   void resume() {
     _channel?.invokeMethod<void>('resume');
+  }
+
+  Future<Map<dynamic, dynamic>> performHitTestAtScreenPosition(double xPosition, double yPosition) {
+    return _channel.invokeMethod('performHitTestAtScreenPosition', { 'xPosition': xPosition, 'yPosition': yPosition});
+  }
+
+  Future<Map<dynamic, dynamic>> getCameraPose(){
+    return _channel.invokeMethod('getCameraPose');
   }
 
   Future<void> removeNodeWithIndex(int index) async {
